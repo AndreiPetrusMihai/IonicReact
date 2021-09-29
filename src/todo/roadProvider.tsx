@@ -1,0 +1,149 @@
+import React, { useCallback, useEffect, useReducer } from "react";
+import PropTypes from "prop-types";
+import { getLogger } from "../core";
+import { RoadProps } from "./RoadProps";
+import { createRoad, getRoads, newWebSocket, updateRoad } from "./roadApi";
+
+const log = getLogger("RoadProvider");
+
+type SaveRoadFn = (road: RoadProps) => Promise<any>;
+
+export interface RoadsState {
+  roads?: RoadProps[];
+  fetching: boolean;
+  fetchingError?: Error | null;
+  saving: boolean;
+  savingError?: Error | null;
+  saveRoad?: SaveRoadFn;
+}
+
+interface ActionProps {
+  type: string;
+  payload?: any;
+}
+
+const initialState: RoadsState = {
+  fetching: false,
+  saving: false,
+};
+
+const FETCH_ROADS_STARTED = "FETCH_ROADS_STARTED";
+const FETCH_ROADS_SUCCEEDED = "FETCH_ROADS_SUCCEEDED";
+const FETCH_ROADS_FAILED = "FETCH_ROADS_FAILED";
+const SAVE_ROAD_STARTED = "SAVE_ROAD_STARTED";
+const SAVE_ROAD_SUCCEEDED = "SAVE_ROAD_SUCCEEDED";
+const SAVE_ROAD_FAILED = "SAVE_ROAD_FAILED";
+
+const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
+  state,
+  { type, payload }
+) => {
+  switch (type) {
+    case FETCH_ROADS_STARTED:
+      return { ...state, fetching: true, fetchingError: null };
+    case FETCH_ROADS_SUCCEEDED:
+      return { ...state, roads: payload.roads, fetching: false };
+    case FETCH_ROADS_FAILED:
+      return { ...state, fetchingError: payload.error, fetching: false };
+    case SAVE_ROAD_STARTED:
+      return { ...state, savingError: null, saving: true };
+    case SAVE_ROAD_SUCCEEDED:
+      const roads = [...(state.roads || [])];
+      const { road } = payload;
+      const index = roads.findIndex((it) => it.id === road.id);
+      if (index === -1) {
+        roads.splice(0, 0, road);
+      } else {
+        roads[index] = road;
+      }
+      return { ...state, roads, saving: false };
+    case SAVE_ROAD_FAILED:
+      return { ...state, savingError: payload.error, saving: false };
+    default:
+      return state;
+  }
+};
+
+export const RoadContext = React.createContext<RoadsState>(initialState);
+
+interface RoadProviderProps {
+  children: PropTypes.ReactNodeLike;
+}
+
+export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const { roads, fetching, fetchingError, saving, savingError } = state;
+  useEffect(getRoadsEffect, []);
+  //useEffect(wsEffect, []);
+  const saveRoad = useCallback<SaveRoadFn>(saveRoadCallback, []);
+  const value = {
+    roads,
+    fetching,
+    fetchingError,
+    saving,
+    savingError,
+    saveRoad: saveRoad,
+  };
+  log("returns");
+  return <RoadContext.Provider value={value}>{children}</RoadContext.Provider>;
+
+  function getRoadsEffect() {
+    let canceled = false;
+    fetchRoads();
+    return () => {
+      canceled = true;
+    };
+
+    async function fetchRoads() {
+      try {
+        log("fetchRoads started");
+        dispatch({ type: FETCH_ROADS_STARTED });
+        const roads = await getRoads();
+        console.log(roads);
+        log("fetchRoads succeeded");
+        if (!canceled) {
+          dispatch({ type: FETCH_ROADS_SUCCEEDED, payload: { roads } });
+        }
+      } catch (error) {
+        log("fetchRoads failed");
+        dispatch({ type: FETCH_ROADS_FAILED, payload: { error } });
+      }
+    }
+  }
+
+  async function saveRoadCallback(road: RoadProps) {
+    try {
+      log("saveRoad started");
+      dispatch({ type: SAVE_ROAD_STARTED });
+      const savedRoad = await (road.id ? updateRoad(road) : createRoad(road));
+      log("saveRoad succeeded");
+      dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road: savedRoad } });
+    } catch (error) {
+      log("saveRoad failed");
+      dispatch({ type: SAVE_ROAD_FAILED, payload: { error } });
+    }
+  }
+
+  // function wsEffect() {
+  //   let canceled = false;
+  //   log("wsEffect - connecting");
+  //   const closeWebSocket = newWebSocket((message) => {
+  //     if (canceled) {
+  //       return;
+  //     }
+  //     const {
+  //       event,
+  //       payload: { road },
+  //     } = message;
+  //     log(`ws message, road ${event}`);
+  //     if (event === "created" || event === "updated") {
+  //       dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road } });
+  //     }
+  //   });
+  //   return () => {
+  //     log("wsEffect - disconnecting");
+  //     canceled = true;
+  //     closeWebSocket();
+  //   };
+  // }
+};
