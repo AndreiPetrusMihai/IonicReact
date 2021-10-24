@@ -2,9 +2,12 @@ import React, { useContext, useEffect, useState } from "react";
 import {
   IonButton,
   IonButtons,
+  IonCheckbox,
   IonContent,
   IonHeader,
   IonInput,
+  IonItem,
+  IonLabel,
   IonLoading,
   IonPage,
   IonTitle,
@@ -25,21 +28,34 @@ interface RoadEditProps
 const RoadEdit: React.FC<RoadEditProps> = ({ history, match }) => {
   const { roads, saving, savingError, saveRoad } = useContext(RoadContext);
   const [name, setName] = useState("");
+  const [lanes, setLanes] = useState(0);
+  const [lastMaintained, setLastMaintained] = useState<Date | null>(null);
+  const [isOperational, setIsOperational] = useState(false);
+
   const [road, setRoad] = useState<RoadProps>();
+  const routeId = match.params.id || "";
+
+  const correspondingRoad = roads?.find((it) => it.id === routeId);
+
   useEffect(() => {
-    log("useEffect");
-    const routeId = match.params.id || "";
-    const road = roads?.find((it) => it.id === routeId);
-    setRoad(road);
-    if (road) {
-      setName(road.name);
+    setRoad(correspondingRoad);
+    if (correspondingRoad) {
+      setName(correspondingRoad.name);
+      setLanes(correspondingRoad.lanes || 0);
+      setLastMaintained(
+        new Date(correspondingRoad.lastMaintained as any as string) || null
+      );
+      setIsOperational(correspondingRoad.isOperational || false);
     }
-  }, [match.params.id, roads]);
+  }, [correspondingRoad?.id]);
+
   const handleSave = () => {
-    const editedRoad = road ? { ...road, name } : { name };
-    saveRoad && saveRoad(editedRoad).then(() => history.goBack());
+    const editedRoad = road
+      ? { ...road, name, lanes, isOperational }
+      : { name, lanes, isOperational };
+    saveRoad && saveRoad(editedRoad).then(() => history.push("/roads"));
   };
-  log("render");
+
   return (
     <IonPage>
       <IonHeader>
@@ -51,10 +67,38 @@ const RoadEdit: React.FC<RoadEditProps> = ({ history, match }) => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <IonInput
-          value={name}
-          onIonChange={(e) => setName(e.detail.value || "")}
-        />
+        <IonItem>
+          <IonLabel position="floating">Road Name</IonLabel>
+          <IonInput
+            value={name}
+            onIonChange={(e) => setName(e.detail.value || "")}
+          />
+        </IonItem>
+
+        <IonItem>
+          <IonLabel position="floating">Lanes</IonLabel>
+          <IonInput
+            value={lanes}
+            onIonChange={(e) => setLanes(parseInt(e.detail.value || "0"))}
+          />
+        </IonItem>
+
+        <IonItem>
+          <IonLabel position="floating">Last Maintained</IonLabel>
+          <IonInput
+            readonly
+            value={lastMaintained?.toDateString() || "No info"}
+          />
+        </IonItem>
+
+        <IonItem>
+          <IonLabel position="floating">Is Operational</IonLabel>
+          <IonCheckbox
+            checked={isOperational}
+            onIonChange={(e) => setIsOperational(e.detail.checked)}
+          />
+        </IonItem>
+
         <IonLoading isOpen={saving} />
         {savingError && (
           <div>{savingError.message || "Failed to save road"}</div>

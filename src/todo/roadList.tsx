@@ -21,8 +21,6 @@ const log = getLogger("RoadList");
 
 const RoadList: React.FC<RouteComponentProps> = ({ history }) => {
   const { roads, fetching, fetchingError } = useContext(RoadContext);
-  log("render");
-  console.log(roads);
   return (
     <IonPage>
       <IonHeader>

@@ -74,7 +74,7 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { roads, fetching, fetchingError, saving, savingError } = state;
   useEffect(getRoadsEffect, []);
-  //useEffect(wsEffect, []);
+  useEffect(wsEffect, []);
   const saveRoad = useCallback<SaveRoadFn>(saveRoadCallback, []);
   const value = {
     roads,
@@ -84,7 +84,6 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
     savingError,
     saveRoad: saveRoad,
   };
-  log("returns");
   return <RoadContext.Provider value={value}>{children}</RoadContext.Provider>;
 
   function getRoadsEffect() {
@@ -96,16 +95,12 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
 
     async function fetchRoads() {
       try {
-        log("fetchRoads started");
         dispatch({ type: FETCH_ROADS_STARTED });
         const roads = await getRoads();
-        console.log(roads);
-        log("fetchRoads succeeded");
         if (!canceled) {
           dispatch({ type: FETCH_ROADS_SUCCEEDED, payload: { roads } });
         }
       } catch (error) {
-        log("fetchRoads failed");
         dispatch({ type: FETCH_ROADS_FAILED, payload: { error } });
       }
     }
@@ -113,37 +108,31 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
 
   async function saveRoadCallback(road: RoadProps) {
     try {
-      log("saveRoad started");
       dispatch({ type: SAVE_ROAD_STARTED });
       const savedRoad = await (road.id ? updateRoad(road) : createRoad(road));
-      log("saveRoad succeeded");
       dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road: savedRoad } });
     } catch (error) {
-      log("saveRoad failed");
       dispatch({ type: SAVE_ROAD_FAILED, payload: { error } });
     }
   }
 
-  // function wsEffect() {
-  //   let canceled = false;
-  //   log("wsEffect - connecting");
-  //   const closeWebSocket = newWebSocket((message) => {
-  //     if (canceled) {
-  //       return;
-  //     }
-  //     const {
-  //       event,
-  //       payload: { road },
-  //     } = message;
-  //     log(`ws message, road ${event}`);
-  //     if (event === "created" || event === "updated") {
-  //       dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road } });
-  //     }
-  //   });
-  //   return () => {
-  //     log("wsEffect - disconnecting");
-  //     canceled = true;
-  //     closeWebSocket();
-  //   };
-  // }
+  function wsEffect() {
+    let canceled = false;
+    const closeWebSocket = newWebSocket((message) => {
+      if (canceled) {
+        return;
+      }
+      const {
+        event,
+        payload: { road },
+      } = message;
+      if (event === "created" || event === "updated") {
+        dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road } });
+      }
+    });
+    return () => {
+      canceled = true;
+      closeWebSocket();
+    };
+  }
 };
