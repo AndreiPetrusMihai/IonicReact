@@ -4,4 +4,5 @@ export interface RoadProps {
   lanes?: number;
   isOperational?: boolean;
   lastMaintained?: Date;
+  version?: number;
 }

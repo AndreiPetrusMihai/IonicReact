@@ -47,7 +47,7 @@ const RoadEdit: React.FC<RoadEditProps> = ({ history, match }) => {
       );
       setIsOperational(correspondingRoad.isOperational || false);
     }
-  }, [correspondingRoad?.id]);
+  }, [correspondingRoad?.id, correspondingRoad?.version]);
 
   const handleSave = () => {
     const editedRoad = road
