@@ -1,4 +1,4 @@
-import axios from "axios";
+import axiosClient from "../utils/axiosClient";
 import { getLogger } from "../core";
 import { RoadProps } from "./RoadProps";
 
@@ -31,16 +31,16 @@ const config = {
 };
 
 export const getRoads: () => Promise<RoadProps[]> = () => {
-  return withLogs(axios.get(roadUrl, config), "getRoads");
+  return withLogs(axiosClient.get(roadUrl, config), "getRoads");
 };
 
 export const createRoad: (road: RoadProps) => Promise<RoadProps[]> = (road) => {
-  return withLogs(axios.post(roadUrl, road, config), "createRoad");
+  return withLogs(axiosClient.post(roadUrl, road, config), "createRoad");
 };
 
 export const updateRoad: (road: RoadProps) => Promise<RoadProps[]> = (road) => {
   return withLogs(
-    axios.put(`${roadUrl}/${road.id}`, road, config),
+    axiosClient.put(`${roadUrl}/${road.id}`, road, config),
     "updateRoad"
   );
 };

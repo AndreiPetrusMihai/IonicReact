@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useReducer } from "react";
+import React, { useCallback, useContext, useEffect, useReducer } from "react";
 import PropTypes from "prop-types";
 import { getLogger } from "../core";
 import { RoadProps } from "../components/RoadProps";
@@ -8,6 +8,7 @@ import {
   newWebSocket,
   updateRoad,
 } from "../components/roadApi";
+import { AuthContext } from "./authProvider";
 
 const log = getLogger("RoadProvider");
 
@@ -38,6 +39,7 @@ const FETCH_ROADS_FAILED = "FETCH_ROADS_FAILED";
 const SAVE_ROAD_STARTED = "SAVE_ROAD_STARTED";
 const SAVE_ROAD_SUCCEEDED = "SAVE_ROAD_SUCCEEDED";
 const SAVE_ROAD_FAILED = "SAVE_ROAD_FAILED";
+const CLEAR_ROADS = "CLEAR_ROADS";
 
 const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
   state,
@@ -64,6 +66,9 @@ const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
       return { ...state, roads, saving: false };
     case SAVE_ROAD_FAILED:
       return { ...state, savingError: payload.error, saving: false };
+    case CLEAR_ROADS:
+      return { ...state, roads: [] };
+
     default:
       return state;
   }
@@ -76,10 +81,14 @@ interface RoadProviderProps {
 }
 
 export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
+  const { authToken } = useContext(AuthContext);
+
   const [state, dispatch] = useReducer(reducer, initialState);
   const { roads, fetching, fetchingError, saving, savingError } = state;
-  useEffect(getRoadsEffect, []);
-  useEffect(wsEffect, []);
+
+  useEffect(getRoadsEffect, [authToken]);
+  useEffect(wsEffect, [authToken]);
+
   const saveRoad = useCallback<SaveRoadFn>(saveRoadCallback, []);
   const value = {
     roads,
@@ -93,7 +102,12 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
 
   function getRoadsEffect() {
     let canceled = false;
-    fetchRoads();
+
+    if (authToken) {
+      fetchRoads();
+    } else {
+      dispatch({ type: CLEAR_ROADS });
+    }
     return () => {
       canceled = true;
     };
@@ -122,22 +136,24 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
   }
 
   function wsEffect() {
-    let canceled = false;
-    const closeWebSocket = newWebSocket((message) => {
-      if (canceled) {
-        return;
-      }
-      const {
-        event,
-        payload: { road },
-      } = message;
-      if (event === "created" || event === "updated") {
-        dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road } });
-      }
-    });
-    return () => {
-      canceled = true;
-      closeWebSocket();
-    };
+    if (authToken) {
+      let canceled = false;
+      const closeWebSocket = newWebSocket((message) => {
+        if (canceled) {
+          return;
+        }
+        const {
+          event,
+          payload: { road },
+        } = message;
+        if (event === "created" || event === "updated") {
+          dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road } });
+        }
+      });
+      return () => {
+        canceled = true;
+        closeWebSocket();
+      };
+    }
   }
 };

@@ -22,23 +22,14 @@ import "@ionic/react/css/display.css";
 
 /* Theme variables */
 import "./theme/variables.css";
-import { RoadProvider } from "./providers/roadProvider";
-import Login from "./views/Login";
+import { AuthProvider } from "./providers/authProvider";
+import Setup from "./Setup";
 
 const App: React.FC = () => (
   <IonApp>
-    <RoadProvider>
-      <IonReactRouter>
-        <IonRouterOutlet>
-          <Route path="/roads" component={RoadList} exact={true} />
-          <Route path="/road" component={RoadEdit} exact={true} />
-          <Route path="/road/:id" component={RoadEdit} exact={true} />
-          <Route path="/login" component={Login} exact={true} />
-
-          <Redirect to="/roads" />
-        </IonRouterOutlet>
-      </IonReactRouter>
-    </RoadProvider>
+    <AuthProvider>
+      <Setup />
+    </AuthProvider>
   </IonApp>
 );
 
