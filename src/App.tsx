@@ -2,7 +2,7 @@ import React from "react";
 import { Redirect, Route } from "react-router-dom";
 import { IonApp, IonRouterOutlet } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { RoadEdit, RoadList } from "./todo";
+import { RoadEdit, RoadList } from "./components";
 
 /* Core CSS required for Ionic components to work properly */
 import "@ionic/react/css/core.css";
@@ -22,7 +22,8 @@ import "@ionic/react/css/display.css";
 
 /* Theme variables */
 import "./theme/variables.css";
-import { RoadProvider } from "./todo/roadProvider";
+import { RoadProvider } from "./providers/roadProvider";
+import Login from "./views/Login";
 
 const App: React.FC = () => (
   <IonApp>
@@ -32,6 +33,8 @@ const App: React.FC = () => (
           <Route path="/roads" component={RoadList} exact={true} />
           <Route path="/road" component={RoadEdit} exact={true} />
           <Route path="/road/:id" component={RoadEdit} exact={true} />
+          <Route path="/login" component={Login} exact={true} />
+
           <Redirect to="/roads" />
         </IonRouterOutlet>
       </IonReactRouter>

@@ -14,9 +14,9 @@ import {
   IonToolbar,
 } from "@ionic/react";
 import { getLogger } from "../core";
-import { RoadContext } from "./roadProvider";
+import { RoadContext } from "../providers/roadProvider";
 import { RouteComponentProps } from "react-router";
-import { RoadProps } from "./RoadProps";
+import { RoadProps } from "../components/RoadProps";
 
 const log = getLogger("RoadEdit");
 

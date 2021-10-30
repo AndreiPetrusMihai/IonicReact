@@ -4,7 +4,7 @@ import { RoadProps } from "./RoadProps";
 
 const log = getLogger("roadApi");
 
-const baseUrl = "localhost:3000";
+const baseUrl = "localhost:4000";
 const roadUrl = `http://${baseUrl}/road`;
 
 interface ResponseProps<T> {

@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useReducer } from "react";
 import PropTypes from "prop-types";
 import { getLogger } from "../core";
-import { RoadProps } from "./RoadProps";
-import { createRoad, getRoads, newWebSocket, updateRoad } from "./roadApi";
+import { RoadProps } from "../components/RoadProps";
+import {
+  createRoad,
+  getRoads,
+  newWebSocket,
+  updateRoad,
+} from "../components/roadApi";
 
 const log = getLogger("RoadProvider");
 

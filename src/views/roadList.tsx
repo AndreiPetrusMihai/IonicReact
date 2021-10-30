@@ -13,9 +13,9 @@ import {
   IonToolbar,
 } from "@ionic/react";
 import { add } from "ionicons/icons";
-import Road from "./road";
+import Road from "../components/road";
 import { getLogger } from "../core";
-import { RoadContext } from "./roadProvider";
+import { RoadContext } from "../providers/roadProvider";
 
 const log = getLogger("RoadList");
 
@@ -25,7 +25,7 @@ const RoadList: React.FC<RouteComponentProps> = ({ history }) => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>My App</IonTitle>
+          <IonTitle>Roads Manager</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent>
