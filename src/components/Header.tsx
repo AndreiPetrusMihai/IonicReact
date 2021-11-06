@@ -14,14 +14,14 @@ interface Props {}
 
 const Header = (props: Props) => {
   const { networkStatus } = useContext(NetworkContext);
-  const match = useRouteMatch(["/road/:id", "/roads", "/login"]);
-
+  const match = useRouteMatch(["/road/:id", "/road", "/roads", "/login"]);
   const getHeaderTitle = () => {
     switch (match?.path || "") {
       case "/roads":
         return "Roads Manager";
       case "/login":
         return "Welcome to Road Manager!";
+      case "/road":
       case "/road/:id":
         return "Edit";
       default:

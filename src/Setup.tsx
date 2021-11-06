@@ -36,7 +36,7 @@ const Setup = (props: Props) => {
               <Redirect to="/roads" />
             </IonRouterOutlet>
             {authToken && (
-              <IonFab vertical="bottom" horizontal="end" slot="fixed">
+              <IonFab vertical="bottom" horizontal="start" slot="fixed">
                 <IonFabButton>
                   <IonIcon icon={logOut} onClick={logout} />
                 </IonFabButton>

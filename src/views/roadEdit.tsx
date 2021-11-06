@@ -46,14 +46,12 @@ const RoadEdit: React.FC<RoadEditProps> = ({ match }) => {
       setIsOperational(correspondingRoad.isOperational || false);
     }
   }, [correspondingRoad?.id, correspondingRoad?.version]);
-
   const handleSave = () => {
     const editedRoad = road
       ? { ...road, name, lanes, isOperational }
       : { name, lanes, isOperational };
     saveRoad && saveRoad(editedRoad).then(() => history.push("/roads"));
   };
-
   return (
     <>
       <IonItem>

@@ -1,6 +1,6 @@
 import axiosClient from "../utils/axiosClient";
 import { getLogger } from "../core";
-import { RoadProps } from "./RoadProps";
+import { RoadProps } from "../components/RoadProps";
 
 const log = getLogger("roadApi");
 
@@ -31,7 +31,7 @@ const config = {
 };
 
 export const getRoads: () => Promise<RoadProps[]> = () => {
-  return withLogs(axiosClient.get(roadUrl, config), "getRoads");
+  return withLogs(axiosClient.get("/roads", config), "getRoads");
 };
 
 export const createRoad: (road: RoadProps) => Promise<RoadProps[]> = (road) => {
@@ -52,10 +52,14 @@ interface MessageData {
   };
 }
 
-export const newWebSocket = (onMessage: (data: MessageData) => void) => {
+export const newWebSocket = (
+  onMessage: (data: MessageData) => void,
+  authToken: string
+) => {
   const ws = new WebSocket(`ws://${baseUrl}`);
   ws.onopen = () => {
     log("web socket onopen");
+    ws.send(JSON.stringify({ type: "authenticate", payload: authToken }));
   };
   ws.onclose = () => {
     log("web socket onclose");
@@ -67,7 +71,5 @@ export const newWebSocket = (onMessage: (data: MessageData) => void) => {
     log("web socket onmessage");
     onMessage(JSON.parse(messageEvent.data));
   };
-  return () => {
-    ws.close();
-  };
+  return ws;
 };

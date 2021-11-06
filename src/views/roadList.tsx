@@ -16,15 +16,25 @@ import { RoadContext } from "../providers/roadProvider";
 const log = getLogger("RoadList");
 
 const RoadList: React.FC<RouteComponentProps> = ({ history }) => {
-  const { roads, fetching, fetchingError } = useContext(RoadContext);
-  console.log("re");
+  const { roads, localSavedRoads, fetching, fetchingError } =
+    useContext(RoadContext);
   return (
     <div>
       <IonLoading isOpen={fetching} message="Fetching roads" />
       {roads && (
         <IonList>
+          {localSavedRoads &&
+            localSavedRoads.map(({ id, name }, index) => (
+              <Road
+                isLocalOnly
+                key={index}
+                name={name}
+                onEdit={(id) => history.push(`/road/${id}`)}
+              />
+            ))}
           {roads.map(({ id, name }) => (
             <Road
+              isLocalOnly={false}
               key={id}
               id={id}
               name={name}

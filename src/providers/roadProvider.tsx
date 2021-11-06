@@ -2,13 +2,9 @@ import React, { useCallback, useContext, useEffect, useReducer } from "react";
 import PropTypes from "prop-types";
 import { getLogger } from "../core";
 import { RoadProps } from "../components/RoadProps";
-import {
-  createRoad,
-  getRoads,
-  newWebSocket,
-  updateRoad,
-} from "../components/roadApi";
+import { createRoad, getRoads, newWebSocket, updateRoad } from "../api/roadApi";
 import { AuthContext } from "./authProvider";
+import { NetworkContext } from "./networkProvider";
 
 const log = getLogger("RoadProvider");
 
@@ -16,6 +12,7 @@ type SaveRoadFn = (road: RoadProps) => Promise<any>;
 
 export interface RoadsState {
   roads?: RoadProps[];
+  localSavedRoads?: RoadProps[];
   fetching: boolean;
   fetchingError?: Error | null;
   saving: boolean;
@@ -37,6 +34,7 @@ const FETCH_ROADS_STARTED = "FETCH_ROADS_STARTED";
 const FETCH_ROADS_SUCCEEDED = "FETCH_ROADS_SUCCEEDED";
 const FETCH_ROADS_FAILED = "FETCH_ROADS_FAILED";
 const SAVE_ROAD_STARTED = "SAVE_ROAD_STARTED";
+const SAVE_ROAD_LOCALLY = "SAVE_ROAD_LOCALLY";
 const SAVE_ROAD_SUCCEEDED = "SAVE_ROAD_SUCCEEDED";
 const SAVE_ROAD_FAILED = "SAVE_ROAD_FAILED";
 const CLEAR_ROADS = "CLEAR_ROADS";
@@ -55,15 +53,22 @@ const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
     case SAVE_ROAD_STARTED:
       return { ...state, savingError: null, saving: true };
     case SAVE_ROAD_SUCCEEDED:
-      const roads = [...(state.roads || [])];
+      let roads = [...(state.roads || [])];
       const { road } = payload;
       const index = roads.findIndex((it) => it.id === road.id);
       if (index === -1) {
-        roads.splice(0, 0, road);
+        roads = [road, ...roads];
       } else {
         roads[index] = road;
       }
       return { ...state, roads, saving: false };
+    case SAVE_ROAD_LOCALLY:
+      const { road: localRoad } = payload;
+      return {
+        ...state,
+        roads: state.roads?.filter((road) => road.id !== localRoad.id),
+        localSavedRoads: [localRoad, ...(state.localSavedRoads || [])],
+      };
     case SAVE_ROAD_FAILED:
       return { ...state, savingError: payload.error, saving: false };
     case CLEAR_ROADS:
@@ -83,23 +88,33 @@ interface RoadProviderProps {
 export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
   const { authToken } = useContext(AuthContext);
 
+  const { networkStatus } = useContext(NetworkContext);
+
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { roads, fetching, fetchingError, saving, savingError } = state;
-  console.log("Roads processing");
+  const {
+    roads,
+    localSavedRoads,
+    fetching,
+    fetchingError,
+    saving,
+    savingError,
+  } = state;
   useEffect(getRoadsEffect, [authToken]);
   useEffect(wsEffect, [authToken]);
 
   const saveRoad = useCallback<SaveRoadFn>(saveRoadCallback, []);
   const value = {
     roads,
+    localSavedRoads,
     fetching,
     fetchingError,
     saving,
     savingError,
     saveRoad: saveRoad,
   };
-  return <RoadContext.Provider value={value}>{children}</RoadContext.Provider>;
+  console.log(localSavedRoads);
 
+  return <RoadContext.Provider value={value}>{children}</RoadContext.Provider>;
   function getRoadsEffect() {
     let canceled = false;
 
@@ -132,13 +147,15 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
       dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road: savedRoad } });
     } catch (error) {
       dispatch({ type: SAVE_ROAD_FAILED, payload: { error } });
+      console.log("Saved locally");
+      dispatch({ type: SAVE_ROAD_LOCALLY, payload: { road } });
     }
   }
 
   function wsEffect() {
     if (authToken) {
       let canceled = false;
-      const closeWebSocket = newWebSocket((message) => {
+      const ws = newWebSocket((message) => {
         if (canceled) {
           return;
         }
@@ -149,10 +166,10 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
         if (event === "created" || event === "updated") {
           dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road } });
         }
-      });
+      }, authToken);
       return () => {
         canceled = true;
-        closeWebSocket();
+        ws.close();
       };
     }
   }

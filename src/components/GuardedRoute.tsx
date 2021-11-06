@@ -13,8 +13,6 @@ interface Props {
 const GuardedRoute = ({ component, exact, path }: Props) => {
   const { authToken } = useContext(AuthContext);
   const history = useHistory();
-  console.log(authToken);
-  console.log(history.location);
   useEffect(() => {
     if (!authToken) history.push("/login");
   }, [authToken]);

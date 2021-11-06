@@ -4,12 +4,16 @@ import { RoadProps } from "./RoadProps";
 
 interface RoadPropsExt extends RoadProps {
   onEdit: (id?: string) => void;
+  isLocalOnly: boolean;
 }
 
-const Road: React.FC<RoadPropsExt> = ({ id, name, onEdit }) => {
+const Road: React.FC<RoadPropsExt> = ({ id, name, onEdit, isLocalOnly }) => {
   return (
     <IonItem onClick={() => onEdit(id)}>
-      <IonLabel>{name}</IonLabel>
+      <IonLabel>
+        {isLocalOnly && "Locally saved: "}
+        {name}
+      </IonLabel>
     </IonItem>
   );
 };
