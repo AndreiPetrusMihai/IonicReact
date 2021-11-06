@@ -2,7 +2,13 @@ import React, { useCallback, useContext, useEffect, useReducer } from "react";
 import PropTypes from "prop-types";
 import { getLogger } from "../core";
 import { RoadProps } from "../components/RoadProps";
-import { createRoad, getRoads, newWebSocket, updateRoad } from "../api/roadApi";
+import {
+  createRoad,
+  getRoads,
+  newWebSocket,
+  updateRoad,
+  uploadLocalRoads,
+} from "../api/roadApi";
 import { AuthContext } from "./authProvider";
 import { NetworkContext } from "./networkProvider";
 
@@ -17,6 +23,7 @@ export interface RoadsState {
   fetchingError?: Error | null;
   saving: boolean;
   savingError?: Error | null;
+  page: number;
   saveRoad?: SaveRoadFn;
 }
 
@@ -28,6 +35,7 @@ interface ActionProps {
 const initialState: RoadsState = {
   fetching: false,
   saving: false,
+  page: 0,
 };
 
 const FETCH_ROADS_STARTED = "FETCH_ROADS_STARTED";
@@ -47,7 +55,13 @@ const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
     case FETCH_ROADS_STARTED:
       return { ...state, fetching: true, fetchingError: null };
     case FETCH_ROADS_SUCCEEDED:
-      return { ...state, roads: payload.roads, fetching: false };
+      return {
+        ...state,
+        page: state.page + 1,
+        roads: payload.roads,
+        localSavedRoads: [],
+        fetching: false,
+      };
     case FETCH_ROADS_FAILED:
       return { ...state, fetchingError: payload.error, fetching: false };
     case SAVE_ROAD_STARTED:
@@ -92,6 +106,7 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
 
   const [state, dispatch] = useReducer(reducer, initialState);
   const {
+    page,
     roads,
     localSavedRoads,
     fetching,
@@ -102,8 +117,27 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
   useEffect(getRoadsEffect, [authToken]);
   useEffect(wsEffect, [authToken]);
 
+  useEffect(() => {
+    if (
+      networkStatus.connected &&
+      localSavedRoads &&
+      localSavedRoads.length > 0
+    ) {
+      dispatch({ type: FETCH_ROADS_STARTED });
+      console.log(localSavedRoads);
+      uploadLocalRoads(localSavedRoads)
+        .then((roads) => {
+          dispatch({ type: FETCH_ROADS_SUCCEEDED, payload: { roads } });
+        })
+        .catch((error) => {
+          dispatch({ type: FETCH_ROADS_FAILED, payload: { error } });
+        });
+    }
+  }, [networkStatus.connected]);
+
   const saveRoad = useCallback<SaveRoadFn>(saveRoadCallback, []);
   const value = {
+    page,
     roads,
     localSavedRoads,
     fetching,
@@ -115,6 +149,7 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
   console.log(localSavedRoads);
 
   return <RoadContext.Provider value={value}>{children}</RoadContext.Provider>;
+
   function getRoadsEffect() {
     let canceled = false;
 
@@ -146,8 +181,6 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
       const savedRoad = await (road.id ? updateRoad(road) : createRoad(road));
       dispatch({ type: SAVE_ROAD_SUCCEEDED, payload: { road: savedRoad } });
     } catch (error) {
-      dispatch({ type: SAVE_ROAD_FAILED, payload: { error } });
-      console.log("Saved locally");
       dispatch({ type: SAVE_ROAD_LOCALLY, payload: { road } });
     }
   }

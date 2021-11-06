@@ -34,14 +34,23 @@ export const getRoads: () => Promise<RoadProps[]> = () => {
   return withLogs(axiosClient.get("/roads", config), "getRoads");
 };
 
-export const createRoad: (road: RoadProps) => Promise<RoadProps[]> = (road) => {
+export const createRoad: (road: RoadProps) => Promise<RoadProps> = (road) => {
   return withLogs(axiosClient.post(roadUrl, road, config), "createRoad");
 };
 
-export const updateRoad: (road: RoadProps) => Promise<RoadProps[]> = (road) => {
+export const updateRoad: (road: RoadProps) => Promise<RoadProps> = (road) => {
   return withLogs(
     axiosClient.put(`${roadUrl}/${road.id}`, road, config),
     "updateRoad"
+  );
+};
+
+export const uploadLocalRoads: (
+  localRoads: RoadProps[]
+) => Promise<RoadProps[]> = (localRoads) => {
+  return withLogs(
+    axiosClient.post(`/roads/sync`, localRoads, config),
+    "syncRoads"
   );
 };
 
