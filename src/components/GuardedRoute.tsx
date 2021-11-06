@@ -1,6 +1,5 @@
 import React, { ReactChild, ReactFragment, useContext, useEffect } from "react";
 import { Route, RouteComponentProps, useHistory } from "react-router";
-import { RoadList } from ".";
 import { AuthContext } from "../providers/authProvider";
 
 interface Props {
@@ -14,15 +13,13 @@ interface Props {
 const GuardedRoute = ({ component, exact, path }: Props) => {
   const { authToken } = useContext(AuthContext);
   const history = useHistory();
-
+  console.log(authToken);
+  console.log(history.location);
   useEffect(() => {
     if (!authToken) history.push("/login");
   }, [authToken]);
 
-  return (
-    (authToken && <Route path={path} component={component} exact={exact} />) ||
-    null
-  );
+  return <Route path={path} component={component} exact={exact} /> || null;
 };
 
 export default GuardedRoute;

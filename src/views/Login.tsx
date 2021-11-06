@@ -32,49 +32,45 @@ const Login = (props: Props) => {
 
   if (retrieveingToken) {
     return (
-      <IonPage>
-        <IonContent>
-          <IonText>Attempting Authentication</IonText>
-        </IonContent>
-      </IonPage>
+      <>
+        <IonText>Attempting Authentication</IonText>
+      </>
     );
   }
 
   return (
-    <IonPage>
-      <IonContent>
-        <IonCard>
-          <IonCardHeader>Login</IonCardHeader>
-          <IonCardContent>
-            <IonItem>
-              <IonLabel position="floating">Email</IonLabel>
-              <IonInput
-                value={email}
-                onIonChange={(e) => {
-                  setEmail(e.detail.value!);
-                }}
-              />
-            </IonItem>
-            <IonItem>
-              <IonLabel position="floating">Password</IonLabel>
-              <IonInput
-                value={password}
-                onIonChange={(e) => {
-                  setPassword(e.detail.value!);
-                }}
-              />
-            </IonItem>
-            <IonButton
-              onClick={() => {
-                login!(email, password);
+    <>
+      <IonCard>
+        <IonCardHeader>Login</IonCardHeader>
+        <IonCardContent>
+          <IonItem>
+            <IonLabel position="floating">Email</IonLabel>
+            <IonInput
+              value={email}
+              onIonChange={(e) => {
+                setEmail(e.detail.value!);
               }}
-            >
-              Login
-            </IonButton>
-          </IonCardContent>
-        </IonCard>
-      </IonContent>
-    </IonPage>
+            />
+          </IonItem>
+          <IonItem>
+            <IonLabel position="floating">Password</IonLabel>
+            <IonInput
+              value={password}
+              onIonChange={(e) => {
+                setPassword(e.detail.value!);
+              }}
+            />
+          </IonItem>
+          <IonButton
+            onClick={() => {
+              login!(email, password);
+            }}
+          >
+            Login
+          </IonButton>
+        </IonCardContent>
+      </IonCard>
+    </>
   );
 };
 

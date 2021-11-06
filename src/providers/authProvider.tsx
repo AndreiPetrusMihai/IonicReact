@@ -10,6 +10,7 @@ type AuthProviderProps = {};
 type AuthState = {
   authToken: string | null;
   login?: (email: string, password: string) => void;
+  logout?: () => void;
   retrieveingToken: boolean;
 };
 
@@ -31,6 +32,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   };
 
+  const removeLSToken = async () => {
+    Storage.remove({ key: "authToken" });
+  };
+
   const getLSToken = async () => {
     return await Storage.get({
       key: "authToken",
@@ -38,8 +43,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
+    setRetrieveingToken(true);
     getLSToken().then((token) => {
-      console.log(token.value);
       if (token.value) {
         axiosClient.interceptors.request.use((config) => {
           config.headers.Authorization = `Bearer ${token.value}`;
@@ -52,7 +57,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = (email: string, password: string) => {
-    console.log(email, password);
     setRetrieveingToken(true);
     axiosClient
       .post("login", { email, password })
@@ -72,9 +76,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
   };
 
+  const logout = () => {
+    removeLSToken();
+    setAuthToken(null);
+  };
+
   const value = {
     authToken,
     login,
+    logout,
     retrieveingToken,
   };
 

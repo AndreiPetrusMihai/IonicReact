@@ -85,7 +85,7 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
 
   const [state, dispatch] = useReducer(reducer, initialState);
   const { roads, fetching, fetchingError, saving, savingError } = state;
-
+  console.log("Roads processing");
   useEffect(getRoadsEffect, [authToken]);
   useEffect(wsEffect, [authToken]);
 

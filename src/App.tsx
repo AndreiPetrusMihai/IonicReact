@@ -24,12 +24,15 @@ import "@ionic/react/css/display.css";
 import "./theme/variables.css";
 import { AuthProvider } from "./providers/authProvider";
 import Setup from "./Setup";
+import NetworkProvider from "./providers/networkProvider";
 
 const App: React.FC = () => (
   <IonApp>
-    <AuthProvider>
-      <Setup />
-    </AuthProvider>
+    <NetworkProvider>
+      <AuthProvider>
+        <Setup />
+      </AuthProvider>
+    </NetworkProvider>
   </IonApp>
 );
 

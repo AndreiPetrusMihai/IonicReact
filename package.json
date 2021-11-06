@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@capacitor/core": "2.4.1",
+    "@capacitor/network": "^1.0.6",
     "@capacitor/storage": "^1.2.2",
     "@ionic/react": "^5.8.5",
     "@ionic/react-router": "^5.8.5",
