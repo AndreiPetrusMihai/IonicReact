@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useEffect, useReducer } from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useReducer,
+  useState,
+} from "react";
 import PropTypes from "prop-types";
 import { getLogger } from "../core";
 import { RoadProps } from "../components/RoadProps";
@@ -24,7 +30,13 @@ export interface RoadsState {
   saving: boolean;
   savingError?: Error | null;
   page: number;
+  more: boolean;
+  sName: string;
+  onlyOperational: boolean;
   saveRoad?: SaveRoadFn;
+  setOnlyOperational?: Function;
+  setSName?: Function;
+  setPage?: Function;
 }
 
 interface ActionProps {
@@ -35,17 +47,35 @@ interface ActionProps {
 const initialState: RoadsState = {
   fetching: false,
   saving: false,
-  page: 0,
+  page: 1,
+  more: true,
+  sName: "",
+  onlyOperational: false,
 };
 
 const FETCH_ROADS_STARTED = "FETCH_ROADS_STARTED";
 const FETCH_ROADS_SUCCEEDED = "FETCH_ROADS_SUCCEEDED";
+const SYNC_ROADS_SUCCEEDED = "SYNC_ROADS_SUCCEEDED";
 const FETCH_ROADS_FAILED = "FETCH_ROADS_FAILED";
 const SAVE_ROAD_STARTED = "SAVE_ROAD_STARTED";
 const SAVE_ROAD_LOCALLY = "SAVE_ROAD_LOCALLY";
 const SAVE_ROAD_SUCCEEDED = "SAVE_ROAD_SUCCEEDED";
 const SAVE_ROAD_FAILED = "SAVE_ROAD_FAILED";
 const CLEAR_ROADS = "CLEAR_ROADS";
+const SET_PAGE = "SET_PAGE";
+const SET_S_NAME = "SET_S_NAME";
+const SET_ONLY_OPERATIONAL = "SET_ONLY_OPERATIONAL";
+
+const roadComplies = (
+  road: RoadProps,
+  sName: string,
+  onlyOperational: boolean
+) => {
+  return (
+    (onlyOperational === false || road.isOperational === true) &&
+    road.name.includes(sName)
+  );
+};
 
 const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
   state,
@@ -55,12 +85,27 @@ const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
     case FETCH_ROADS_STARTED:
       return { ...state, fetching: true, fetchingError: null };
     case FETCH_ROADS_SUCCEEDED:
+      const nonDuplicatedRoads = payload.roads.filter(
+        (nRoad: RoadProps) =>
+          !(state.roads?.some((sRoad) => sRoad.id === nRoad.id) || false)
+      );
       return {
         ...state,
-        page: state.page + 1,
+        roads: [...(state.roads || []), ...nonDuplicatedRoads],
+        localSavedRoads: [],
+        fetching: false,
+        more: payload.more,
+      };
+    case SYNC_ROADS_SUCCEEDED:
+      return {
+        ...state,
         roads: payload.roads,
         localSavedRoads: [],
         fetching: false,
+        more: payload.more,
+        page: 1,
+        sName: "",
+        onlyOperational: false,
       };
     case FETCH_ROADS_FAILED:
       return { ...state, fetchingError: payload.error, fetching: false };
@@ -70,24 +115,44 @@ const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
       let roads = [...(state.roads || [])];
       const { road } = payload;
       const index = roads.findIndex((it) => it.id === road.id);
-      if (index === -1) {
-        roads = [road, ...roads];
+      if (roadComplies(road, state.sName, state.onlyOperational)) {
+        if (index === -1) {
+          roads = [road, ...roads];
+        } else {
+          roads[index] = road;
+        }
       } else {
-        roads[index] = road;
+        if (index !== -1) roads = roads.filter((fRoad) => fRoad.id === road.id);
       }
       return { ...state, roads, saving: false };
     case SAVE_ROAD_LOCALLY:
       const { road: localRoad } = payload;
+      let biggestId = -1;
+      [...(state.roads || []), ...(state.localSavedRoads || [])].forEach(
+        (road) => {
+          if (road.id! > biggestId) biggestId = road.id!;
+        }
+      );
+      console.log(biggestId);
+
+      localRoad.id = biggestId;
+      localRoad.createdOnFrontend = true;
       return {
         ...state,
+        saving: false,
         roads: state.roads?.filter((road) => road.id !== localRoad.id),
         localSavedRoads: [localRoad, ...(state.localSavedRoads || [])],
       };
     case SAVE_ROAD_FAILED:
       return { ...state, savingError: payload.error, saving: false };
     case CLEAR_ROADS:
-      return { ...state, roads: [] };
-
+      return { ...initialState };
+    case SET_PAGE:
+      return { ...state, page: payload };
+    case SET_S_NAME:
+      return { ...state, sName: payload, page: 1, roads: [] };
+    case SET_ONLY_OPERATIONAL:
+      return { ...state, onlyOperational: payload, page: 1, roads: [] };
     default:
       return state;
   }
@@ -105,8 +170,12 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
   const { networkStatus } = useContext(NetworkContext);
 
   const [state, dispatch] = useReducer(reducer, initialState);
+
   const {
     page,
+    more,
+    onlyOperational,
+    sName,
     roads,
     localSavedRoads,
     fetching,
@@ -114,7 +183,20 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
     saving,
     savingError,
   } = state;
-  useEffect(getRoadsEffect, [authToken]);
+
+  const setOnlyOperational = (onlyOperational: boolean) => {
+    dispatch({ type: SET_ONLY_OPERATIONAL, payload: onlyOperational });
+  };
+
+  const setSName = (sName: string) => {
+    dispatch({ type: SET_S_NAME, payload: sName });
+  };
+
+  const setPage = (setPage: number) => {
+    dispatch({ type: SET_PAGE, payload: setPage });
+  };
+
+  useEffect(getRoadsEffect, [authToken, page, sName, onlyOperational]);
   useEffect(wsEffect, [authToken]);
 
   useEffect(() => {
@@ -124,10 +206,9 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
       localSavedRoads.length > 0
     ) {
       dispatch({ type: FETCH_ROADS_STARTED });
-      console.log(localSavedRoads);
       uploadLocalRoads(localSavedRoads)
         .then((roads) => {
-          dispatch({ type: FETCH_ROADS_SUCCEEDED, payload: { roads } });
+          dispatch({ type: SYNC_ROADS_SUCCEEDED, payload: { roads, more } });
         })
         .catch((error) => {
           dispatch({ type: FETCH_ROADS_FAILED, payload: { error } });
@@ -138,6 +219,9 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
   const saveRoad = useCallback<SaveRoadFn>(saveRoadCallback, []);
   const value = {
     page,
+    more,
+    sName,
+    onlyOperational,
     roads,
     localSavedRoads,
     fetching,
@@ -145,8 +229,10 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
     saving,
     savingError,
     saveRoad: saveRoad,
+    setOnlyOperational,
+    setSName,
+    setPage,
   };
-  console.log(localSavedRoads);
 
   return <RoadContext.Provider value={value}>{children}</RoadContext.Provider>;
 
@@ -154,7 +240,9 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
     let canceled = false;
 
     if (authToken) {
-      fetchRoads();
+      if (networkStatus.connected === true) {
+        fetchRoads();
+      }
     } else {
       dispatch({ type: CLEAR_ROADS });
     }
@@ -165,9 +253,16 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
     async function fetchRoads() {
       try {
         dispatch({ type: FETCH_ROADS_STARTED });
-        const roads = await getRoads();
+        const {
+          roads,
+          page: retrievedPage,
+          more,
+        } = await getRoads(page, sName, onlyOperational);
         if (!canceled) {
-          dispatch({ type: FETCH_ROADS_SUCCEEDED, payload: { roads } });
+          dispatch({
+            type: FETCH_ROADS_SUCCEEDED,
+            payload: { roads, more, page: retrievedPage },
+          });
         }
       } catch (error) {
         dispatch({ type: FETCH_ROADS_FAILED, payload: { error } });

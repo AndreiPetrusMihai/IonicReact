@@ -30,17 +30,53 @@ const config = {
   },
 };
 
-export const getRoads: () => Promise<RoadProps[]> = () => {
-  return withLogs(axiosClient.get("/roads", config), "getRoads");
+type GetRoadsReturnType = {
+  page: number;
+  roads: RoadProps[];
+  more: boolean;
+};
+
+export const getRoads: (
+  page: number,
+  sName: string,
+  onlyOperational: boolean
+) => Promise<GetRoadsReturnType> = (
+  page: number = 1,
+  sName: string = "",
+  onlyOperational: boolean = false
+) => {
+  return withLogs(
+    axiosClient
+      .get(
+        `/roads?page=${page}&sName=${sName}&onlyOperational=${onlyOperational}`,
+        config
+      )
+      .then((data) => {
+        data.data.roads.forEach((road: any) => {
+          road.id = parseInt(road.id);
+        });
+        return data;
+      }),
+    "getRoads"
+  );
 };
 
 export const createRoad: (road: RoadProps) => Promise<RoadProps> = (road) => {
-  return withLogs(axiosClient.post(roadUrl, road, config), "createRoad");
+  return withLogs(
+    axiosClient.post(roadUrl, road, config).then((data) => {
+      data.data.id = parseInt(data.data.id);
+      return data;
+    }),
+    "createRoad"
+  );
 };
 
 export const updateRoad: (road: RoadProps) => Promise<RoadProps> = (road) => {
   return withLogs(
-    axiosClient.put(`${roadUrl}/${road.id}`, road, config),
+    axiosClient.put(`${roadUrl}/${road.id}`, road, config).then((data) => {
+      data.data.id = parseInt(data.data.id);
+      return data;
+    }),
     "updateRoad"
   );
 };
@@ -49,7 +85,12 @@ export const uploadLocalRoads: (
   localRoads: RoadProps[]
 ) => Promise<RoadProps[]> = (localRoads) => {
   return withLogs(
-    axiosClient.post(`/roads/sync`, localRoads, config),
+    axiosClient.post(`/roads/sync`, localRoads, config).then((data) => {
+      data.data.roads.forEach((road: any) => {
+        road.id = parseInt(road.id);
+      });
+      return data;
+    }),
     "syncRoads"
   );
 };

@@ -23,7 +23,8 @@ interface RoadEditProps
   }> {}
 
 const RoadEdit: React.FC<RoadEditProps> = ({ match }) => {
-  const { roads, saving, savingError, saveRoad } = useContext(RoadContext);
+  const { roads, localSavedRoads, saving, savingError, saveRoad } =
+    useContext(RoadContext);
   const history = useHistory();
   const [name, setName] = useState("");
   const [lanes, setLanes] = useState(0);
@@ -32,8 +33,11 @@ const RoadEdit: React.FC<RoadEditProps> = ({ match }) => {
 
   const [road, setRoad] = useState<RoadProps>();
   const routeId = match.params.id || "";
-
-  const correspondingRoad = roads?.find((it) => it.id === routeId);
+  console.log(localSavedRoads);
+  const correspondingRoad = [
+    ...(roads || []),
+    ...(localSavedRoads || []),
+  ]?.find((it) => it.id === parseInt(routeId));
 
   useEffect(() => {
     setRoad(correspondingRoad);
@@ -46,12 +50,14 @@ const RoadEdit: React.FC<RoadEditProps> = ({ match }) => {
       setIsOperational(correspondingRoad.isOperational || false);
     }
   }, [correspondingRoad?.id, correspondingRoad?.version]);
+
   const handleSave = () => {
     const editedRoad = road
       ? { ...road, name, lanes, isOperational }
       : { name, lanes, isOperational };
     saveRoad && saveRoad(editedRoad).then(() => history.push("/roads"));
   };
+
   return (
     <>
       <IonItem>
