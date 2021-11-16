@@ -8,9 +8,9 @@ import {
   IonText,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { add, logOut } from "ionicons/icons";
+import { add, camera, logOut } from "ionicons/icons";
 import React, { useContext } from "react";
-import { Route, Redirect } from "react-router";
+import { Route, Redirect, useRouteMatch } from "react-router";
 import { RoadList, RoadEdit } from "./components";
 import GuardedRoute from "./components/GuardedRoute";
 import Header from "./components/Header";

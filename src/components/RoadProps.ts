@@ -6,4 +6,5 @@ export interface RoadProps {
   lastMaintained?: Date;
   version?: number;
   createdOnFrontend?: boolean;
+  base64Photo?: string;
 }
