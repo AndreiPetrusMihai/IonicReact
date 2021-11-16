@@ -86,7 +86,7 @@ export const uploadLocalRoads: (
 ) => Promise<RoadProps[]> = (localRoads) => {
   return withLogs(
     axiosClient.post(`/roads/sync`, localRoads, config).then((data) => {
-      data.data.roads.forEach((road: any) => {
+      data.data.forEach((road: any) => {
         road.id = parseInt(road.id);
       });
       return data;

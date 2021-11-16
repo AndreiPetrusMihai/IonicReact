@@ -81,9 +81,11 @@ const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
   state,
   { type, payload }
 ) => {
+  console.log(type);
   switch (type) {
     case FETCH_ROADS_STARTED:
       return { ...state, fetching: true, fetchingError: null };
+
     case FETCH_ROADS_SUCCEEDED:
       const nonDuplicatedRoads = payload.roads.filter(
         (nRoad: RoadProps) =>
@@ -96,13 +98,14 @@ const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
         fetching: false,
         more: payload.more,
       };
+
     case SYNC_ROADS_SUCCEEDED:
       return {
         ...state,
         roads: payload.roads,
         localSavedRoads: [],
         fetching: false,
-        more: payload.more,
+        more: true,
         page: 1,
         sName: "",
         onlyOperational: false,
@@ -197,7 +200,7 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
   };
 
   useEffect(getRoadsEffect, [authToken, page, sName, onlyOperational]);
-  useEffect(wsEffect, [authToken]);
+  useEffect(wsEffect, [authToken, networkStatus]);
 
   useEffect(() => {
     if (
@@ -281,7 +284,7 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
   }
 
   function wsEffect() {
-    if (authToken) {
+    if (authToken && networkStatus.connected) {
       let canceled = false;
       const ws = newWebSocket((message) => {
         if (canceled) {
@@ -296,9 +299,13 @@ export const RoadProvider: React.FC<RoadProviderProps> = ({ children }) => {
         }
       }, authToken);
       return () => {
+        console.log("Closign");
         canceled = true;
         ws.close();
       };
     }
+    return () => {
+      console.log("Clearing");
+    };
   }
 };

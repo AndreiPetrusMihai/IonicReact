@@ -22,7 +22,6 @@ const Login = (props: Props) => {
 
   const { authToken, login, retrieveingToken } = useContext(AuthContext);
   const history = useHistory();
-  console.log(authToken);
 
   useEffect(() => {
     if (authToken) {
