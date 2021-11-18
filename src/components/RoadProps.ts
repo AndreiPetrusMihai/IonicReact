@@ -7,4 +7,6 @@ export interface RoadProps {
   version?: number;
   createdOnFrontend?: boolean;
   base64Photo?: string;
+  lat?: number;
+  long?: number;
 }
