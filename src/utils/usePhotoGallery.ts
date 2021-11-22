@@ -24,7 +24,7 @@ export function usePhotoGallery() {
     Filesystem.writeFile({
       path: fileName,
       data: base64Data,
-      directory: Directory.Data,
+      directory: Directory.Documents,
     }).then((res) => console.log(res));
   };
 

@@ -205,7 +205,7 @@ const RoadEdit: React.FC<RoadEditProps> = ({ match }) => {
         </IonRow>
         <IonRow>
           <IonText>Long: {long?.toFixed(2) || "-"}</IonText>
-        </IonRow>{" "}
+        </IonRow>
         {lat && long && (
           <IonRow>
             <IonButton

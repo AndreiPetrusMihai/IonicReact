@@ -117,7 +117,7 @@ const reducer: (state: RoadsState, action: ActionProps) => RoadsState = (
     case SAVE_ROAD_SUCCEEDED:
       let roads = [...(state.roads || [])];
       const { road } = payload;
-      const index = roads.findIndex((it) => it.id === road.id);
+      const index = roads.findIndex((it) => it.id == road.id);
       if (roadComplies(road, state.sName, state.onlyOperational)) {
         if (index === -1) {
           roads = [road, ...roads];
